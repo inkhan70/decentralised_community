@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: community-hub-realtime
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm run start:realtime
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: STORAGE_DRIVER
+        value: mongo
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
