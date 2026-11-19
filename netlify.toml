@@ -1,0 +1,4 @@
+[build]
+  command = "npm run build"
+  # Only the browser frontend is static; publishing the repo root would expose server source files.
+  publish = "public"
