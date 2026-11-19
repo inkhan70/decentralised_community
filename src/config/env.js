@@ -101,7 +101,7 @@ const config = {
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
   // "mongo": remote (Atlas) or local MongoDB instance, via MONGO_URI.
   // "local": zero-setup, file-based JSON storage: no database server needed.
-  STORAGE_DRIVER: (process.env.STORAGE_DRIVER || 'mongo').toLowerCase(),
+  STORAGE_DRIVER: (process.env.STORAGE_DRIVER || (isProduction ? 'mongo' : 'local')).toLowerCase(),
   LOCAL_DB_PATH: process.env.LOCAL_DB_PATH || path.join(process.cwd(), 'data', 'community-db.json'),
   MONGO_URI: process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/community_hub',
   BCRYPT_SALT_ROUNDS: intEnv('BCRYPT_SALT_ROUNDS', 12, { min: 4, max: 15 }),
