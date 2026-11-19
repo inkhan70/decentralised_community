@@ -23,6 +23,37 @@
       <div class="stack">
         <button class="primary" id="google-signin" type="button">Continue with Google</button>
         <p class="muted small">Use a Google account with a verified email address. Your first sign-in creates your community profile.</p>
+
+        <div class="auth-tabs" role="tablist" aria-label="Sign in or create account">
+          <button id="tab-login" type="button" role="tab" aria-selected="true" aria-controls="login-form" class="seg-btn">Sign in</button>
+          <button id="tab-register" type="button" role="tab" aria-selected="false" aria-controls="register-form" class="seg-btn">Create account</button>
+        </div>
+
+        <form id="login-form" class="stack" role="tabpanel" aria-labelledby="tab-login">
+          <label>Username <input name="username" autocomplete="username" required maxlength="32" /></label>
+          <label>Password <input name="password" type="password" autocomplete="current-password" required maxlength="128" /></label>
+          <button class="primary" type="submit">Sign in</button>
+        </form>
+
+        <form id="register-form" class="stack" role="tabpanel" aria-labelledby="tab-register" hidden>
+          <label>Full name <input name="fullname" autocomplete="name" required maxlength="100" /></label>
+          <label>Username <input name="username" autocomplete="username" required minlength="3" maxlength="32" /></label>
+          <label>Password <input name="password" type="password" autocomplete="new-password" required minlength="8" maxlength="128" /></label>
+          <label>Contact number <input name="contact_number" type="tel" autocomplete="tel" maxlength="32" /></label>
+          <label>Trade
+            <select name="trade" required>
+              <option value="">Choose your trade</option>
+              <option value="doctors">Doctors</option>
+              <option value="labors">Labors</option>
+              <option value="carpenters">Carpenters</option>
+              <option value="technicians">Technicians</option>
+              <option value="teachers">Teachers</option>
+              <option value="developers">Developers</option>
+              <option value="masons">Masons</option>
+            </select>
+          </label>
+          <button class="primary" type="submit">Create account</button>
+        </form>
       </div>
       <section id="category-onboarding" class="stack" hidden>
         <h2>Choose your community category</h2>

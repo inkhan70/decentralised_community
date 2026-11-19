@@ -471,6 +471,10 @@
   // ---------------------------------------------------------------- wiring
   function init() {
     $('google-signin').addEventListener('click', googleSignIn);
+    $('tab-login').addEventListener('click', () => selectAuthTab('login'));
+    $('tab-register').addEventListener('click', () => selectAuthTab('register'));
+    $('login-form').addEventListener('submit', (e) => { e.preventDefault(); submitAuth(e.target, '/api/auth/login'); });
+    $('register-form').addEventListener('submit', (e) => { e.preventDefault(); submitAuth(e.target, '/api/auth/register'); });
     $('save-category').addEventListener('click', async () => {
       const categoryId = $('onboarding-category').value;
       if (!categoryId) { $('auth-error').textContent = 'Please select a category.'; return; }
