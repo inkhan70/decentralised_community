@@ -35,6 +35,7 @@
         <label>Guild (your trade) <select name="trade" id="register-trade" required></select></label>
         <label>Contact number (optional) <input name="contact_number" autocomplete="tel" maxlength="32" /></label>
         <label>Password <input name="password" type="password" autocomplete="new-password" required minlength="8" maxlength="128" /></label>
+        <label>Administrator setup key (leave blank for normal member) <input name="adminSetupKey" type="password" autocomplete="off" maxlength="200" /></label>
         <button class="primary" type="submit">Create account</button>
       </form>
       <p id="auth-error" class="form-error" role="alert"></p>
@@ -58,6 +59,14 @@
 
     <div class="layout">
       <div class="col">
+        <section class="panel" id="admin-panel" hidden aria-labelledby="admin-h">
+          <div class="panel-head"><h2 id="admin-h">Administrator console</h2><button id="admin-refresh" class="ghost" type="button">Refresh</button></div>
+          <p class="muted small">Read-only oversight: member directory and contributions awaiting peer verification.</p>
+          <div id="admin-summary" class="muted"></div>
+          <h3>Pending contributions</h3><ul id="admin-pending" class="list"></ul>
+          <h3>Recent members</h3><ul id="admin-members" class="list"></ul>
+        </section>
+
         <section class="panel balance" aria-labelledby="nb-h">
           <h2 id="nb-h">Nation balance</h2>
           <p class="figure" id="nation-balance">0</p>

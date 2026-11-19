@@ -150,4 +150,41 @@ Behind a reverse proxy, set `TRUST_PROXY=1` and terminate TLS there.
 - The `local` driver is for a **single process** and rewrites the whole JSON file on each change; use Mongo for several instances or a large community.
 - Rate limits and presence are in-memory per process.
 - The JWT lives in `sessionStorage` (cleared when the tab closes) and there is no password reset or token revocation yet.
-- There are no moderator/admin roles: poll creators can close their own polls, nothing more.
+- Administrator tools are limited to the read-only oversight console described below; member moderation and policy editing are not implemented.
+
+## Administrator workflow (enhanced)
+
+The deployment now supports a separately assigned `admin` role. Public account
+creation always creates a normal `member` unless the deployment owner supplies
+the private `ADMIN_SETUP_KEY` during registration. The key should be a long,
+random secret, kept only in the hosting provider's environment settings. Create
+the administrator account, then remove `ADMIN_SETUP_KEY` from the deployment
+environment and redeploy. Never publish the key or commit it to Git.
+
+After signing in, an administrator sees the **Administrator console** with:
+
+1. Community overview: member count, verified Nation Balance and pending count.
+2. Contribution review queue: pending submissions and their endorsement progress.
+3. Member directory: recent members, guild and verified balance.
+4. Refresh action to reload the current data from the backend.
+
+This first admin console is intentionally read-only. Peer verification remains
+the authority for contribution credit; admins cannot silently approve their own
+financial records. Member suspension, role management, audit exports and policy
+editing are not yet implemented and should be added with explicit audit logs
+before this is used for a real organization.
+
+## Free preview deployment
+
+A starter `render.yaml` is included for a Render Node web service. For a preview,
+create a free MongoDB Atlas cluster, create a database user, allow the Render
+service to connect, then deploy this repository on Render using the Blueprint.
+Set `MONGO_URI` and `ADMIN_SETUP_KEY` in Render's environment settings. The app
+uses MongoDB in hosted mode because Render's free web filesystem is temporary;
+local JSON storage is for development on your own device only.
+
+Free hosting is suitable for demos and early testing, not a dependable production
+service: Render free services sleep after inactivity and lose local filesystem
+changes on restart/redeploy. MongoDB Atlas Free has storage and feature limits.
+For a real society with important records, arrange managed backups, monitoring,
+access review and a paid persistent hosting/database plan before launch.

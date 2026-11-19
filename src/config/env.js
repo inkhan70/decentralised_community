@@ -92,6 +92,8 @@ const config = {
   PORT: intEnv('PORT', 3000, { min: 0, max: 65535 }),
   // Optional public-facing URL (e.g. behind a reverse proxy/CDN), shown at startup only.
   PUBLIC_URL: process.env.PUBLIC_URL || '',
+  // High-entropy one-time-style bootstrap key for creating administrator accounts.
+  ADMIN_SETUP_KEY: process.env.ADMIN_SETUP_KEY || '',
   // Set when running behind a reverse proxy / load balancer / tunnel so that
   // rate limiting and logs see the real client IP (e.g. "1" for one proxy hop).
   TRUST_PROXY: parseTrustProxy(process.env.TRUST_PROXY),

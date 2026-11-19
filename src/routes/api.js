@@ -5,6 +5,7 @@ const { ServiceError } = require('../services/errors');
 const ledgerService = require('../services/ledgerService');
 const pollService = require('../services/pollService');
 const chatService = require('../services/chatService');
+const config = require('../config/env');
 
 const router = express.Router();
 
@@ -27,13 +28,37 @@ async function currentUser(req) {
   return { id: user.id, username: user.username, trade: user.trade, record: user };
 }
 
+// Administrator access is granted only to accounts created with the private
+// deployment bootstrap key; public self-selected roles are never trusted.
+async function requireAdmin(req, res, next) {
+  try {
+    const user = await storage.users.findById(req.user.id);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Administrator access required' });
+    }
+    req.adminUser = user;
+    return next();
+  } catch (err) {
+    return res.status(500).json({ error: 'Unable to verify administrator access' });
+  }
+}
+
+router.get('/admin/overview', verifyToken, requireAdmin, route('admin/overview', async (req, res) => {
+  const [stats, pending, members] = await Promise.all([
+    ledgerService.getStats(),
+    ledgerService.listHistory({ id: req.adminUser.id }, { limit: 100, status: 'pending' }),
+    storage.users.listForAdmin(100)
+  ]);
+  res.json({ stats, pending, members });
+}));
+
 router.get(
   '/dashboard/me',
   verifyToken,
   route('dashboard/me', async (req, res) => {
     const user = await currentUser(req);
     const totalNationBalance = await storage.ledger.aggregateTotal();
-    res.json({ member: storage.users.toPublic(user.record), nationBalance: totalNationBalance });
+    res.json({ member: { ...storage.users.toPublic(user.record), isAdmin: user.record.role === 'admin' }, nationBalance: totalNationBalance });
   })
 );
 

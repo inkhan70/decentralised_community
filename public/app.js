@@ -279,9 +279,21 @@
       const { member } = await api('/api/dashboard/me');
       state.me = member;
       renderMe();
+      $('admin-panel').hidden = !state.me.isAdmin;
+      if (state.me.isAdmin) loadAdminOverview();
     } catch (err) {
       if (err.status === 401 || err.status === 403) logout('Your session has expired. Please sign in again.');
     }
+  }
+
+
+  async function loadAdminOverview() {
+    try {
+      const data = await api('/api/admin/overview');
+      $('admin-summary').textContent = `${data.stats.memberCount} members · ${data.stats.pendingCount} pending contributions · Nation balance ${num.format(data.stats.nationBalance)}`;
+      $('admin-pending').replaceChildren(...(data.pending.length ? data.pending.map((e) => h('li', null, `${e.contributorName || 'Member'} (${e.trade}): ${e.description} — ${num.format(e.amount)} · ${e.endorsementCount}/${e.endorsementsNeeded} endorsements`)) : [h('li', { class: 'empty' }, 'No pending contributions.')]));
+      $('admin-members').replaceChildren(...(data.members.length ? data.members.map((m) => h('li', null, `${m.fullname} (@${m.username}) · ${m.trade} · balance ${num.format(m.personal_balance || 0)}`)) : [h('li', { class: 'empty' }, 'No members yet.')]));
+    } catch (err) { toast(err.message || 'Could not load administrator overview', 'error'); }
   }
 
   function upsertEntry(entry) {
@@ -413,6 +425,7 @@
     $('login-form').addEventListener('submit', (e) => { e.preventDefault(); submitAuth(e.target, '/api/auth/login'); });
     $('register-form').addEventListener('submit', (e) => { e.preventDefault(); submitAuth(e.target, '/api/auth/register'); });
     $('logout').addEventListener('click', () => logout());
+    $('admin-refresh').addEventListener('click', loadAdminOverview);
 
     $('contrib-form').addEventListener('submit', (e) => {
       e.preventDefault();

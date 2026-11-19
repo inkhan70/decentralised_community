@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema(
     password_hash: { type: String, required: true },
     fullname: { type: String, required: true, trim: true, maxlength: 100 },
     trade: { type: String, required: true, enum: VALID_TRADES },
+    role: { type: String, enum: ['member', 'admin'], default: 'member', index: true },
     contact_number: { type: String, default: '', trim: true, maxlength: 32 },
     personal_balance: { type: Number, default: 0.0 }
   },

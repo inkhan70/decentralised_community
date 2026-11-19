@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
+const crypto = require('crypto');
 
 const config = require('../config/env');
 const storage = require('../storage');
@@ -46,7 +47,7 @@ function getDummyHash() {
 }
 
 router.post('/register', registerLimiter, async (req, res) => {
-  const { username, password, fullname, trade, contact_number } = req.body || {};
+  const { username, password, fullname, trade, contact_number, adminSetupKey } = req.body || {};
 
   if (!username || !password || !fullname || !trade) {
     return res.status(400).json({ error: 'username, password, fullname, and trade are required' });
@@ -75,12 +76,16 @@ router.post('/register', registerLimiter, async (req, res) => {
     }
 
     const password_hash = await bcrypt.hash(password, config.BCRYPT_SALT_ROUNDS);
+    const providedAdminKey = Buffer.from(typeof adminSetupKey === 'string' ? adminSetupKey : '');
+    const expectedAdminKey = Buffer.from(config.ADMIN_SETUP_KEY);
+    const isBootstrapAdmin = expectedAdminKey.length > 0 && providedAdminKey.length === expectedAdminKey.length && crypto.timingSafeEqual(providedAdminKey, expectedAdminKey);
     const newUser = await storage.users.create({
       username: usernameLower,
       password_hash,
       fullname: fullname.trim(),
       trade: trade.toLowerCase(),
-      contact_number: contact_number ? contact_number.trim() : ''
+      contact_number: contact_number ? contact_number.trim() : '',
+      role: isBootstrapAdmin ? 'admin' : 'member'
     });
 
     const token = signToken(newUser);

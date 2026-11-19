@@ -76,7 +76,7 @@ function assertReady() {
 
 // ---------------------------------------------------------------- users
 const users = {
-  async create({ username, password_hash, fullname, trade, contact_number }) {
+  async create({ username, password_hash, fullname, trade, contact_number, role = 'member' }) {
     return mutex.runExclusive(async () => {
       assertReady();
       if (cache.users.some((u) => u.username === username)) {
@@ -89,6 +89,7 @@ const users = {
         password_hash,
         fullname,
         trade,
+        role: role === 'admin' ? 'admin' : 'member',
         contact_number: contact_number || '',
         personal_balance: 0,
         createdAt: now,
@@ -126,6 +127,11 @@ const users = {
   async count() {
     assertReady();
     return cache.users.length;
+  },
+
+  async listForAdmin(limit = 100) {
+    assertReady();
+    return [...cache.users].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))).slice(0, limit).map(({ id, username, fullname, trade, personal_balance, createdAt }) => ({ id, username, fullname, trade, personal_balance: personal_balance || 0, createdAt }));
   },
 
   async topByBalance(limit = 10) {
