@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Community Hub</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <!-- Served by the Socket.io server itself: same origin, no CDN, works offline on a LAN. -->
+  <script src="/socket.io/socket.io.js" defer></script>
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+
+  <!-- Signed-out view -->
+  <main id="auth-view" class="auth" hidden>
+    <section class="auth-card">
+      <h1>Community Hub</h1>
+      <p class="lede">A shared ledger, guild chat and live votes for your trade community.</p>
+
+      <div class="tabs" role="tablist" aria-label="Account">
+        <button role="tab" id="tab-login" aria-selected="true" aria-controls="login-form" class="tab">Sign in</button>
+        <button role="tab" id="tab-register" aria-selected="false" aria-controls="register-form" class="tab">Create account</button>
+      </div>
+
+      <form id="login-form" class="stack" autocomplete="on">
+        <label>Username <input name="username" autocomplete="username" required minlength="3" maxlength="32" /></label>
+        <label>Password <input name="password" type="password" autocomplete="current-password" required maxlength="128" /></label>
+        <button class="primary" type="submit">Sign in</button>
+      </form>
+
+      <form id="register-form" class="stack" autocomplete="on" hidden>
+        <label>Full name <input name="fullname" autocomplete="name" required maxlength="100" /></label>
+        <label>Username <input name="username" autocomplete="username" required minlength="3" maxlength="32" pattern="[A-Za-z0-9_.\-]{3,32}" title="3-32 letters, numbers, . _ -" /></label>
+        <label>Guild (your trade) <select name="trade" id="register-trade" required></select></label>
+        <label>Contact number (optional) <input name="contact_number" autocomplete="tel" maxlength="32" /></label>
+        <label>Password <input name="password" type="password" autocomplete="new-password" required minlength="8" maxlength="128" /></label>
+        <button class="primary" type="submit">Create account</button>
+      </form>
+      <p id="auth-error" class="form-error" role="alert"></p>
+    </section>
+  </main>
+
+  <!-- Signed-in view -->
+  <div id="app-view" hidden>
+    <header class="topbar">
+      <div class="who">
+        <strong id="me-name"></strong>
+        <span id="me-guild" class="chip"></span>
+      </div>
+      <div class="topbar-right">
+        <span id="me-balance" class="muted"></span>
+        <span id="presence" class="muted"></span>
+        <span id="conn" class="conn" data-state="connecting">Connecting</span>
+        <button id="logout" class="ghost">Sign out</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <div class="col">
+        <section class="panel balance" aria-labelledby="nb-h">
+          <h2 id="nb-h">Nation balance</h2>
+          <p class="figure" id="nation-balance">0</p>
+          <p class="muted" id="balance-note"></p>
+          <div id="guild-bars" class="guild-bars" aria-label="Verified total by guild"></div>
+        </section>
+
+        <section class="panel" aria-labelledby="contrib-h">
+          <h2 id="contrib-h">Log a contribution</h2>
+          <form id="contrib-form" class="stack">
+            <label>Amount (digits or hours) <input name="amount" type="number" min="0.01" max="1000000" step="any" required /></label>
+            <label>What did you do? <input name="description" maxlength="500" required placeholder="Rewired the community centre hall" /></label>
+            <button class="primary" type="submit">Log contribution</button>
+          </form>
+          <p class="muted small" id="verify-hint"></p>
+        </section>
+
+        <section class="panel" aria-labelledby="ledger-h">
+          <div class="panel-head">
+            <h2 id="ledger-h">Ledger</h2>
+            <div class="seg" role="group" aria-label="Filter ledger">
+              <button class="seg-btn" data-filter="all" aria-pressed="true">All</button>
+              <button class="seg-btn" data-filter="pending" aria-pressed="false">Needs endorsement</button>
+            </div>
+          </div>
+          <ul id="ledger-list" class="list"></ul>
+        </section>
+
+        <section class="panel" aria-labelledby="lb-h">
+          <h2 id="lb-h">Top contributors</h2>
+          <ol id="leaderboard" class="board"></ol>
+        </section>
+      </div>
+
+      <div class="col">
+        <section class="panel" aria-labelledby="polls-h">
+          <h2 id="polls-h">Proposals</h2>
+          <details class="new-poll">
+            <summary>Start a proposal</summary>
+            <form id="poll-form" class="stack">
+              <label>Question <input name="title" maxlength="300" required /></label>
+              <label>Options (one per line, 2 to 10) <textarea name="options" rows="4" required></textarea></label>
+              <div class="row">
+                <label>Who can vote <select name="targetTrade" id="poll-target"></select></label>
+                <label>Closes after (hours, optional) <input name="durationHours" type="number" min="1" step="any" /></label>
+              </div>
+              <button class="primary" type="submit">Publish proposal</button>
+            </form>
+          </details>
+          <div id="polls-list" class="list"></div>
+        </section>
+
+        <section class="panel chat" aria-labelledby="chat-h">
+          <div class="panel-head">
+            <h2 id="chat-h">Chat</h2>
+            <div class="seg" role="group" aria-label="Chat channel">
+              <button class="seg-btn" data-channel="guild" aria-pressed="true" id="chat-tab-guild">Guild</button>
+              <button class="seg-btn" data-channel="community" aria-pressed="false">Everyone</button>
+            </div>
+          </div>
+          <ul id="chat-log" class="chat-log" aria-live="polite"></ul>
+          <form id="chat-form" class="chat-form">
+            <input name="text" maxlength="500" autocomplete="off" placeholder="Write a message" aria-label="Message" required />
+            <button class="primary" type="submit">Send</button>
+          </form>
+        </section>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
