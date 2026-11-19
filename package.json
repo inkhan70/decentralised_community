@@ -8,9 +8,7 @@
     "dev": "nodemon server.js",
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
-    "test:ci": "jest --runInBand --ci",
-    "start:realtime": "node realtime-server.js",
-    "start:api": "netlify dev"
+    "test:ci": "jest --runInBand --ci"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -22,10 +20,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.3.1",
     "morgan": "^1.10.0",
-    "socket.io": "^4.7.5",
-    "firebase-admin": "^12.7.0",
-    "serverless-http": "^3.2.0",
-    "express-async-errors": "^3.1.1"
+    "socket.io": "^4.7.5"
   },
   "devDependencies": {
     "jest": "^29.7.0",

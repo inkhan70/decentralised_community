@@ -5,11 +5,10 @@ const { VALID_TRADES } = require('../utils/validators');
 const userSchema = new mongoose.Schema(
   {
     username: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    password_hash: { type: String, default: null },
-    firebaseUid: { type: String, default: undefined, sparse: true, unique: true },
-    email: { type: String, default: '', lowercase: true, trim: true },
+    password_hash: { type: String, required: true },
     fullname: { type: String, required: true, trim: true, maxlength: 100 },
-    trade: { type: String, required: true, trim: true, lowercase: true, maxlength: 80 },
+    trade: { type: String, required: true, enum: VALID_TRADES },
+    role: { type: String, enum: ['member', 'admin'], default: 'member', index: true },
     contact_number: { type: String, default: '', trim: true, maxlength: 32 },
     personal_balance: { type: Number, default: 0.0 }
   },

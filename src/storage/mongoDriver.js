@@ -47,9 +47,9 @@ function isReady() {
 
 // ---------------------------------------------------------------- users
 const users = {
-  async create({ username, password_hash, fullname, trade, contact_number }) {
+  async create({ username, password_hash, fullname, trade, contact_number, role = 'member' }) {
     try {
-      const doc = await User.create({ username, password_hash, fullname, trade, contact_number });
+      const doc = await User.create({ username, password_hash, fullname, trade, contact_number, role: role === 'admin' ? 'admin' : 'member' });
       return toPlain(doc);
     } catch (err) {
       if (err.code === 11000) throw new DuplicateKeyError('Username already exists');
@@ -69,13 +69,17 @@ const users = {
   async count() {
     return User.countDocuments();
   },
+  async listForAdmin(limit = 100) {
+    const docs = await User.find({}, 'username fullname trade personal_balance createdAt').sort({ createdAt: -1 }).limit(limit);
+    return docs.map(toPlain);
+  },
   async topByBalance(limit = 10) {
     const docs = await User.find({}, 'username fullname trade personal_balance').sort({ personal_balance: -1 }).limit(limit);
     return docs.map(toPlain);
   },
   toPublic(user) {
     if (!user) return null;
-    const { password_hash, firebaseUid, ...rest } = user;
+    const { password_hash, ...rest } = user;
     return rest;
   }
 };

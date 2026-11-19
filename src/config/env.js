@@ -92,6 +92,8 @@ const config = {
   PORT: intEnv('PORT', 3000, { min: 0, max: 65535 }),
   // Optional public-facing URL (e.g. behind a reverse proxy/CDN), shown at startup only.
   PUBLIC_URL: process.env.PUBLIC_URL || '',
+  // High-entropy one-time-style bootstrap key for creating administrator accounts.
+  ADMIN_SETUP_KEY: process.env.ADMIN_SETUP_KEY || '',
   // Set when running behind a reverse proxy / load balancer / tunnel so that
   // rate limiting and logs see the real client IP (e.g. "1" for one proxy hop).
   TRUST_PROXY: parseTrustProxy(process.env.TRUST_PROXY),
@@ -99,7 +101,7 @@ const config = {
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
   // "mongo": remote (Atlas) or local MongoDB instance, via MONGO_URI.
   // "local": zero-setup, file-based JSON storage: no database server needed.
-  STORAGE_DRIVER: (process.env.STORAGE_DRIVER || 'mongo').toLowerCase(),
+  STORAGE_DRIVER: (process.env.STORAGE_DRIVER || (isProduction ? 'mongo' : 'local')).toLowerCase(),
   LOCAL_DB_PATH: process.env.LOCAL_DB_PATH || path.join(process.cwd(), 'data', 'community-db.json'),
   MONGO_URI: process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/community_hub',
   BCRYPT_SALT_ROUNDS: intEnv('BCRYPT_SALT_ROUNDS', 12, { min: 4, max: 15 }),

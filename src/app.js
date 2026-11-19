@@ -1,4 +1,3 @@
-require('express-async-errors');
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
@@ -9,8 +8,6 @@ const config = require('./config/env');
 const storage = require('./storage');
 const authRoutes = require('./routes/auth');
 const apiRoutes = require('./routes/api');
-const googleAuthRoutes = require('./routes/googleAuth');
-const adminRoutes = require('./routes/admin');
 
 function buildCorsOptions() {
   const origins = config.ALLOWED_ORIGINS;
@@ -59,15 +56,16 @@ function createApp() {
   app.use(express.json({ limit: '10kb' }));
   app.use(morgan(config.isProduction ? 'combined' : 'dev', { skip: () => config.NODE_ENV === 'test' }));
 
-  const health = (req, res) => {
-    res.status(200).json({ status: 'ok', storageDriver: storage.driverName, db: storage.isReady() ? 'connected' : 'disconnected', timestamp: new Date().toISOString() });
-  };
-  app.get('/health', health);
-  app.get('/api/health', health);
+  app.get('/health', (req, res) => {
+    res.status(200).json({
+      status: 'ok',
+      storageDriver: storage.driverName,
+      db: storage.isReady() ? 'connected' : 'disconnected',
+      timestamp: new Date().toISOString()
+    });
+  });
 
   app.use('/api/auth', authRoutes);
-  app.use('/api/auth', googleAuthRoutes);
-  app.use('/api/community', adminRoutes);
   app.use('/api', apiRoutes);
   app.use(express.static(path.join(__dirname, '..', 'public')));
 

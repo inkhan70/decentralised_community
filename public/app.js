@@ -64,8 +64,7 @@
   }
 
   async function api(path, options) {
-    const base = (window.COMMUNITY_CONFIG && window.COMMUNITY_CONFIG.API_BASE_URL || '').replace(/\/$/, '');
-    const res = await fetch(`${base}${path}`, {
+    const res = await fetch(path, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
@@ -278,12 +277,23 @@
   async function refreshMe() {
     try {
       const { member } = await api('/api/dashboard/me');
-      state.me = { ...state.me, ...member };
+      state.me = member;
       renderMe();
-      loadAdminConsole();
+      $('admin-panel').hidden = !state.me.isAdmin;
+      if (state.me.isAdmin) loadAdminOverview();
     } catch (err) {
       if (err.status === 401 || err.status === 403) logout('Your session has expired. Please sign in again.');
     }
+  }
+
+
+  async function loadAdminOverview() {
+    try {
+      const data = await api('/api/admin/overview');
+      $('admin-summary').textContent = `${data.stats.memberCount} members · ${data.stats.pendingCount} pending contributions · Nation balance ${num.format(data.stats.nationBalance)}`;
+      $('admin-pending').replaceChildren(...(data.pending.length ? data.pending.map((e) => h('li', null, `${e.contributorName || 'Member'} (${e.trade}): ${e.description} — ${num.format(e.amount)} · ${e.endorsementCount}/${e.endorsementsNeeded} endorsements`)) : [h('li', { class: 'empty' }, 'No pending contributions.')]));
+      $('admin-members').replaceChildren(...(data.members.length ? data.members.map((m) => h('li', null, `${m.fullname} (@${m.username}) · ${m.trade} · balance ${num.format(m.personal_balance || 0)}`)) : [h('li', { class: 'empty' }, 'No members yet.')]));
+    } catch (err) { toast(err.message || 'Could not load administrator overview', 'error'); }
   }
 
   function upsertEntry(entry) {
@@ -296,7 +306,7 @@
 
   function connect() {
     if (state.socket) state.socket.disconnect();
-    const socket = io(window.COMMUNITY_CONFIG.REALTIME_URL, { auth: { token: state.token }, transports: ['websocket', 'polling'] });
+    const socket = io({ auth: { token: state.token } });
     state.socket = socket;
 
     socket.on('connect', () => {
@@ -356,75 +366,14 @@
   }
 
   // ------------------------------------------------------------------- auth
-  async function startSession(token, user, categories = []) {
+  async function startSession(token, user) {
     state.token = token;
     sessionStorage.setItem('hub_token', token);
-    state.me = { ...user, personal_balance: 0 };
-    sessionStorage.setItem('hub_user', JSON.stringify(state.me));
-    if (!user.onboardingComplete) {
-      $('google-signin').hidden = true;
-      $('category-onboarding').hidden = false;
-      $('onboarding-category').replaceChildren(
-        h('option', { value: '' }, 'Choose your category'),
-        ...categories.map((c) => h('option', { value: c._id || c.id }, c.name))
-      );
-      return;
-    }
-    await enterDashboard();
-  }
-
-  async function enterDashboard() {
-    $('category-onboarding').hidden = true;
-    $('google-signin').hidden = false;
+    state.me = { ...user, personal_balance: user.personal_balance || 0 };
     showApp();
     renderMe();
     connect();
-    refreshMe();
-  }
-
-  async function googleSignIn() {
-    try {
-      const cfg = window.COMMUNITY_CONFIG && window.COMMUNITY_CONFIG.FIREBASE;
-      if (!cfg || !cfg.apiKey || cfg.apiKey.startsWith('YOUR_')) throw new Error('Firebase web configuration is missing. Update frontend/config.js.');
-      if (!firebase.apps.length) firebase.initializeApp(cfg);
-      const provider = new firebase.auth.GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: 'select_account' });
-      const result = await firebase.auth().signInWithPopup(provider);
-      const idToken = await result.user.getIdToken(true);
-      const body = await api('/api/auth/google', { method: 'POST', body: JSON.stringify({ idToken }) });
-      await startSession(body.token, body.user, body.categories || []);
-    } catch (err) { $('auth-error').textContent = err.message || 'Google sign-in failed.'; }
-  }
-
-  async function loadAdminConsole() {
-    if (!state.me || !['admin', 'super_admin'].includes(state.me.role)) return;
-    $('admin-console').hidden = false;
-    try {
-      const [overview, categories, members] = await Promise.all([
-        api('/api/community/admin/overview'), api('/api/community/categories'), api('/api/community/admin/members')
-      ]);
-      $('admin-summary').textContent = `${overview.members} members · ${overview.active} active · ${overview.suspended} suspended · ${overview.categories} categories`;
-      $('admin-category-list').replaceChildren(...categories.categories.map((c) => {
-        const toggle = h('button', { class: 'ghost', type: 'button' }, c.enabled ? 'Disable' : 'Enable');
-        toggle.addEventListener('click', async () => { await api(`/api/community/admin/categories/${c._id}`, { method: 'PATCH', body: JSON.stringify({ enabled: !c.enabled }) }); loadAdminConsole(); });
-        const edit = h('button', { class: 'ghost', type: 'button' }, 'Rename');
-        edit.addEventListener('click', async () => { const name = prompt('New category name:', c.name); if (name && name.trim()) { try { await api(`/api/community/admin/categories/${c._id}`, { method: 'PATCH', body: JSON.stringify({ name: name.trim() }) }); loadAdminConsole(); } catch (e) { toast(e.message, 'error'); } } });
-        const remove = h('button', { class: 'ghost', type: 'button' }, 'Archive');
-        remove.addEventListener('click', async () => { if (confirm(`Archive ${c.name}?`)) { try { await api(`/api/community/admin/categories/${c._id}`, { method: 'DELETE' }); loadAdminConsole(); } catch (e) { toast(e.message, 'error'); } } });
-        return h('li', null, h('strong', null, c.name), ' ', h('span', { class: 'muted' }, c.slug), ' ', toggle, ' ', edit, ' ', remove);
-      }));
-      $('admin-member-list').replaceChildren(...members.members.map((m) => {
-        const row = h('li', null, h('strong', null, m.fullname || 'Member'), ` · ${m.email} · ${m.role} · ${m.status}`);
-        if (state.me.role === 'super_admin' && m.role !== 'super_admin') {
-          const role = h('button', { class: 'ghost', type: 'button' }, m.role === 'admin' ? 'Remove admin' : 'Make admin');
-          role.addEventListener('click', async () => { try { await api(`/api/community/admin/members/${m._id}`, { method: 'PATCH', body: JSON.stringify({ role: m.role === 'admin' ? 'member' : 'admin' }) }); loadAdminConsole(); } catch (e) { toast(e.message, 'error'); } });
-          const status = h('button', { class: 'ghost', type: 'button' }, m.status === 'active' ? 'Suspend' : 'Restore');
-          status.addEventListener('click', async () => { try { await api(`/api/community/admin/members/${m._id}`, { method: 'PATCH', body: JSON.stringify({ status: m.status === 'active' ? 'suspended' : 'active' }) }); loadAdminConsole(); } catch (e) { toast(e.message, 'error'); } });
-          row.append(' ', role, ' ', status);
-        }
-        return row;
-      }));
-    } catch (err) { toast(`Admin dashboard: ${err.message}`, 'error'); }
+    refreshMe(); // loads the authoritative profile and balance
   }
 
   function logout(message) {
@@ -432,11 +381,7 @@
     state.socket = null;
     state.token = null;
     state.me = null;
-    $('admin-console').hidden = true;
-    $('category-onboarding').hidden = true;
-    $('google-signin').hidden = false;
     sessionStorage.removeItem('hub_token');
-    sessionStorage.removeItem('hub_user');
     showAuth(message);
   }
 
@@ -470,22 +415,17 @@
 
   // ---------------------------------------------------------------- wiring
   function init() {
-    $('google-signin').addEventListener('click', googleSignIn);
-    $('save-category').addEventListener('click', async () => {
-      const categoryId = $('onboarding-category').value;
-      if (!categoryId) { $('auth-error').textContent = 'Please select a category.'; return; }
-      try {
-        const result = await api('/api/community/onboarding/category', { method: 'POST', body: JSON.stringify({ categoryId }) });
-        state.me.trade = result.category.slug; state.me.onboardingComplete = true;
-        sessionStorage.setItem('hub_user', JSON.stringify(state.me));
-        await enterDashboard();
-      } catch (err) { $('auth-error').textContent = err.message; }
-    });
-    $('category-form').addEventListener('submit', async (e) => {
-      e.preventDefault(); const data = formData(e.target);
-      try { await api('/api/community/admin/categories', { method: 'POST', body: JSON.stringify(data) }); e.target.reset(); loadAdminConsole(); } catch (err) { toast(err.message, 'error'); }
-    });
-    $('logout').addEventListener('click', () => { if (window.firebase && firebase.apps.length) firebase.auth().signOut(); logout(); });
+    $('register-trade').replaceChildren(
+      h('option', { value: '' }, 'Choose your trade'),
+      ...TRADES.map((t) => h('option', { value: t }, cap(t)))
+    );
+
+    $('tab-login').addEventListener('click', () => selectAuthTab('login'));
+    $('tab-register').addEventListener('click', () => selectAuthTab('register'));
+    $('login-form').addEventListener('submit', (e) => { e.preventDefault(); submitAuth(e.target, '/api/auth/login'); });
+    $('register-form').addEventListener('submit', (e) => { e.preventDefault(); submitAuth(e.target, '/api/auth/register'); });
+    $('logout').addEventListener('click', () => logout());
+    $('admin-refresh').addEventListener('click', loadAdminOverview);
 
     $('contrib-form').addEventListener('submit', (e) => {
       e.preventDefault();
@@ -530,19 +470,10 @@
     setInterval(() => { if (state.me) { renderPolls(); renderLedger(); } }, 30000);
 
     if (state.token) {
-      // Restore the verified session and its onboarding/role metadata.
-      let savedUser = null;
-      try { savedUser = JSON.parse(sessionStorage.getItem('hub_user') || 'null'); } catch (_) {}
-      api('/api/dashboard/me').then(async ({ member }) => {
-        if (!savedUser) return logout();
-        state.me = { ...savedUser, ...member };
-        if (state.me.onboardingComplete) await enterDashboard();
-        else {
-          const data = await api('/api/community/categories');
-          $('google-signin').hidden = true; $('category-onboarding').hidden = false;
-          $('onboarding-category').replaceChildren(h('option', { value: '' }, 'Choose your category'), ...data.categories.map((c) => h('option', { value: c._id }, c.name)));
-        }
-      }).catch(() => logout());
+      // Restore a previous session: validate the token before showing the app.
+      api('/api/dashboard/me')
+        .then(({ member }) => startSession(state.token, member))
+        .catch(() => logout());
     } else {
       showAuth();
     }

@@ -7,7 +7,7 @@ WORKDIR /app
 
 COPY package*.json ./
 # Install only production dependencies (no jest/nodemon/supertest in the image)
-RUN npm install --omit=dev
+RUN npm ci --omit=dev
 
 # ==========================================
 # STAGE 2: Production Runtime

@@ -4,6 +4,7 @@ const { ServiceError } = require('./errors');
 const {
   VALID_TRADES,
   isValidId,
+  isValidTrade,
   isValidTitle,
   isValidPollOptions,
   isValidOptionIndex,
@@ -45,7 +46,7 @@ async function createPoll(user, data) {
   // Type-check BEFORE calling string methods: a non-string here used to throw
   // inside an async socket handler and crash the whole process.
   if (targetTrade !== undefined && targetTrade !== null && targetTrade !== '') {
-    if (typeof targetTrade !== 'string' || (targetTrade.toLowerCase() !== 'all' && !/^[a-z0-9][a-z0-9-]{1,79}$/.test(targetTrade.toLowerCase()))) {
+    if (typeof targetTrade !== 'string' || (targetTrade.toLowerCase() !== 'all' && !isValidTrade(targetTrade))) {
       throw new ServiceError(`Invalid target guild. Choose from: all, ${VALID_TRADES.join(', ')}`);
     }
   }
