@@ -1,0 +1,21 @@
+[build]
+  functions = "netlify/functions"
+  publish = "frontend"
+
+[functions]
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/health"
+  to = "/.netlify/functions/api/health"
+  status = 200
+  force = true
+
+[build.environment]
+  NODE_VERSION = "20"
