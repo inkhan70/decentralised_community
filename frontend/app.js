@@ -64,7 +64,9 @@
   }
 
   async function api(path, options) {
-    const base = (window.COMMUNITY_CONFIG && window.COMMUNITY_CONFIG.API_BASE_URL || '').replace(/\/$/, '');
+    // FIXED: Use the new BACKEND_URL, fallback to COMMUNITY_CONFIG if it exists
+    const base = (window.BACKEND_URL || (window.COMMUNITY_CONFIG && window.COMMUNITY_CONFIG.API_BASE_URL) || '').replace(/\/$/, '');
+    
     const res = await fetch(`${base}${path}`, {
       ...options,
       headers: {
@@ -296,7 +298,11 @@
 
   function connect() {
     if (state.socket) state.socket.disconnect();
-    const socket = io(window.COMMUNITY_CONFIG.REALTIME_URL, { auth: { token: state.token }, transports: ['websocket', 'polling'] });
+    
+    // FIXED: Use the new BACKEND_URL for Socket.IO as well
+    const socketUrl = window.BACKEND_URL || (window.COMMUNITY_CONFIG && window.COMMUNITY_CONFIG.REALTIME_URL) || undefined;
+    
+    const socket = io(socketUrl, { auth: { token: state.token }, transports: ['websocket', 'polling'] });
     state.socket = socket;
 
     socket.on('connect', () => {
