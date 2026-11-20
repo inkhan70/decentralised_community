@@ -1,9 +1,12 @@
 [build]
-  functions = "netlify/functions"
   publish = "frontend"
 
 [functions]
+  # Moved here from the [build] section
+  directory = "netlify/functions"
   node_bundler = "esbuild"
+  # 🔥 THIS IS THE FIX: Tells Netlify not to bundle serverless-http
+  external_node_modules = ["serverless-http"]
 
 [[redirects]]
   from = "/api/*"
