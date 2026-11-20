@@ -1,0 +1,42 @@
+services:
+  # Node.js + Socket.io Server Container
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: community_server
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+      # - STORAGE_DRIVER=local   # uncomment to use zero-setup file storage instead of MongoDB
+    volumes:
+      # Only needed when STORAGE_DRIVER=local — persists the JSON data file
+      # across container restarts/rebuilds. Harmless (unused) with STORAGE_DRIVER=mongo.
+      - community_data:/app/data
+    # Uncomment 'depends_on' if running the local MongoDB container below
+    # depends_on:
+    #   - mongodb
+
+  # Optional Local MongoDB Container (skip if using MongoDB Atlas cloud, or STORAGE_DRIVER=local)
+  # mongodb:
+  #   image: mongo:7.0-alpine
+  #   container_name: community_db
+  #   restart: unless-stopped
+  #   ports:
+  #     - "27017:27017"
+  #   environment:
+  #     MONGO_INITDB_ROOT_USERNAME: admin
+  #     MONGO_INITDB_ROOT_PASSWORD: secretpassword
+  #     MONGO_INITDB_DATABASE: community_hub
+  #   volumes:
+  #     - mongo_data:/data/db
+
+volumes:
+  community_data:
+  # mongo_data:

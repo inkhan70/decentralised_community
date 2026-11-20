@@ -1,0 +1,24 @@
+[build]
+  publish = "frontend"
+
+[functions]
+  # Moved here from the [build] section
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+  # Keep serverless and native/runtime-sensitive packages available to the function
+  external_node_modules = ["serverless-http", "firebase-admin", "mongoose", "express", "express-async-errors"]
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/health"
+  to = "/.netlify/functions/api/health"
+  status = 200
+  force = true
+
+[build.environment]
+  NODE_VERSION = "20"
