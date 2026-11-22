@@ -66,8 +66,10 @@ router.post('/google', limiter, async (req, res) => {
     const categories = await CommunityCategory.find({ enabled: true, archivedAt: null }).sort({ sortOrder: 1, name: 1 }).select('name slug description');
     res.json({ token: issueSession(user, legacyUser), user: { id: legacyUser._id.toString(), identityId: user._id.toString(), email: user.email, fullname: user.fullname, photoURL: user.photoURL, role: user.role, categoryId: user.categoryId, onboardingComplete: user.onboardingComplete, trade: legacyUser.trade }, categories });
   } catch (err) {
-    console.error('[auth/google]', err.message);
-    res.status(401).json({ error: 'Google sign-in could not be verified. Check Firebase configuration and try again.' });
+    console.error('[auth/google]', err);
+    const code = String(err && err.code || '');
+    const status = code.startsWith('auth/') ? 401 : 500;
+    res.status(status).json({ error: status === 401 ? 'Google sign-in could not be verified. Check that this account belongs to the configured Firebase project.' : 'Google sign-in service is temporarily unavailable. Check the Netlify function logs and server configuration.' });
   }
 });
 module.exports = router;

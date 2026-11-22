@@ -79,7 +79,7 @@ const users = {
   },
   toPublic(user) {
     if (!user) return null;
-    const { password_hash, ...rest } = user;
+    const { password_hash, firebaseUid, ...rest } = user;
     return rest;
   }
 };

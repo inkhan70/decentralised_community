@@ -5,8 +5,8 @@
   # Moved here from the [build] section
   directory = "netlify/functions"
   node_bundler = "esbuild"
-  # 🔥 THIS IS THE FIX: Tells Netlify not to bundle serverless-http
-  external_node_modules = ["serverless-http"]
+  # Keep serverless and native/runtime-sensitive packages available to the function
+  external_node_modules = ["serverless-http", "firebase-admin", "mongoose", "express", "express-async-errors", "bcrypt"]
 
 [[redirects]]
   from = "/api/*"

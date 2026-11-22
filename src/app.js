@@ -1,3 +1,4 @@
+require('express-async-errors');
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
@@ -8,6 +9,8 @@ const config = require('./config/env');
 const storage = require('./storage');
 const authRoutes = require('./routes/auth');
 const apiRoutes = require('./routes/api');
+const googleAuthRoutes = require('./routes/googleAuth');
+const communityRoutes = require('./routes/admin');
 
 function buildCorsOptions() {
   const origins = config.ALLOWED_ORIGINS;
@@ -21,6 +24,23 @@ function buildCorsOptions() {
       return callback(new Error('Not allowed by CORS'));
     }
   };
+}
+
+/**
+ * CORS headers for responses that are produced OUTSIDE Express (for example the
+ * Netlify function's early 503). Without these a browser hides the real error
+ * behind a generic "network/CORS" failure.
+ */
+function corsHeadersFor(origin) {
+  const origins = config.ALLOWED_ORIGINS;
+  const headers = { 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS' };
+  if (origins.length === 1 && origins[0] === '*') {
+    headers['Access-Control-Allow-Origin'] = '*';
+  } else if (origin && origins.includes(origin)) {
+    headers['Access-Control-Allow-Origin'] = origin;
+    headers.Vary = 'Origin';
+  }
+  return headers;
 }
 
 function createApp() {
@@ -56,7 +76,7 @@ function createApp() {
   app.use(express.json({ limit: '10kb' }));
   app.use(morgan(config.isProduction ? 'combined' : 'dev', { skip: () => config.NODE_ENV === 'test' }));
 
-  app.get('/health', (req, res) => {
+  app.get(['/health', '/api/health'], (req, res) => {
     res.status(200).json({
       status: 'ok',
       storageDriver: storage.driverName,
@@ -66,6 +86,8 @@ function createApp() {
   });
 
   app.use('/api/auth', authRoutes);
+  app.use('/api/auth', googleAuthRoutes);
+  app.use('/api/community', communityRoutes);
   app.use('/api', apiRoutes);
   app.use(express.static(path.join(__dirname, '..', 'public')));
 
@@ -77,6 +99,9 @@ function createApp() {
   // Central error handler (catches CORS rejection, JSON parse errors, etc.)
   // eslint-disable-next-line no-unused-vars
   app.use((err, req, res, next) => {
+    if (err.message === 'Not allowed by CORS') {
+      return res.status(403).json({ error: 'This origin is not allowed by the API. Add it to ALLOWED_ORIGINS on the backend.' });
+    }
     if (err.type === 'entity.too.large') {
       return res.status(413).json({ error: 'Payload too large' });
     }
@@ -91,4 +116,4 @@ function createApp() {
   return app;
 }
 
-module.exports = { createApp, buildCorsOptions };
+module.exports = { createApp, buildCorsOptions, corsHeadersFor };

@@ -1,7 +1,7 @@
 /* Public Firebase web config. Firebase web API keys identify the project and are not secrets. */
 window.COMMUNITY_CONFIG = {
-  API_BASE_URL: 'https://YOUR-NETLIFY-SITE.netlify.app',
-  REALTIME_URL: 'https://YOUR-RENDER-REALTIME-SERVICE.onrender.com',
+  API_BASE_URL: 'https://decentralised-community.netlify.app',
+  REALTIME_URL: 'https://decentralised-community-hub.onrender.com',
   FIREBASE: {
     apiKey: "AIzaSyA7F5fLCPZgA_YLPlpG3rFzU0O0HVbeSAs",
     authDomain: 'decentralised-community.firebaseapp.com',

@@ -3,8 +3,8 @@ services:
     name: decentralised-community-hub
     runtime: node
     plan: free
-    buildCommand: npm ci
-    startCommand: npm start
+    buildCommand: npm install
+    startCommand: npm run start:realtime
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
@@ -12,12 +12,8 @@ services:
       - key: STORAGE_DRIVER
         value: mongo
       - key: JWT_SECRET
-        generateValue: true
+        sync: false
       - key: MONGO_URI
         sync: false
-      - key: ADMIN_SETUP_KEY
-        sync: false
-      - key: VERIFICATION_THRESHOLD
-        value: "2"
       - key: ALLOWED_ORIGINS
-        value: "*"
+        value: https://decentralised-community.vercel.app,https://decentralised-community.netlify.app

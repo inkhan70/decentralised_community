@@ -25,7 +25,7 @@ Do **not** make whichever random Google account signs in first an administrator.
 1. Open https://console.firebase.google.com/ and create a Firebase project.
 2. Register a Web App in Project settings and copy its web config.
 3. Open Authentication → Sign-in method → Google, enable it and save a support email.
-4. Open Authentication → Settings → Authorized domains and add your Vercel production domain and any preview domain you actually use.
+4. Open Authentication → Settings → Authorized domains and add `decentralised-community.vercel.app` and `decentralised-community.netlify.app` (plus any preview/custom domains you actually use).
 5. In Project settings → Service accounts, generate a private key for a service account. Keep the JSON private. In Netlify, add the complete JSON as the value of `FIREBASE_SERVICE_ACCOUNT_JSON`. Never place this private key in `frontend/config.js`, Vercel client variables, or GitHub.
 6. Set `BOOTSTRAP_ADMIN_EMAIL` to the exact verified Gmail/Google account that should become Super Admin.
 
@@ -39,7 +39,7 @@ Do **not** make whichever random Google account signs in first an administrator.
    - `STORAGE_DRIVER=mongo`
    - `MONGO_URI=<Atlas connection string>`
    - `JWT_SECRET=<random secret at least 48 characters>`
-   - `ALLOWED_ORIGINS=https://YOUR-VERCEL-DOMAIN.vercel.app`
+   - `ALLOWED_ORIGINS=https://decentralised-community.vercel.app,https://decentralised-community.netlify.app`
    - `BOOTSTRAP_ADMIN_EMAIL=<your exact Google email>`
    - `FIREBASE_SERVICE_ACCOUNT_JSON=<complete service account JSON>`
 5. Deploy. The API base is `https://YOUR-SITE.netlify.app`; health check is `https://YOUR-SITE.netlify.app/health`.
@@ -49,10 +49,7 @@ Do **not** make whichever random Google account signs in first an administrator.
 1. Import the same GitHub repository into Vercel.
 2. Set Root Directory to `frontend`.
 3. Deploy as a static site (no build command required).
-4. Edit `frontend/config.js` before deployment:
-   - `API_BASE_URL`: your Netlify site URL.
-   - `REALTIME_URL`: your Render realtime service URL.
-   - `FIREBASE`: values copied from the Firebase Web App config.
+4. Confirm `frontend/config.js` contains the Netlify API URL, Render realtime URL and Firebase Web App configuration. Update the Render URL there if your Render service receives a different hostname.
 5. Add the exact Vercel domain to Firebase Authentication → Authorized domains.
 
 `frontend/config.js` contains only public Firebase web-app configuration. It must never contain the Firebase service-account JSON, MongoDB URI, JWT signing secret, or admin private key.
@@ -66,9 +63,9 @@ Do **not** make whichever random Google account signs in first an administrator.
    - `STORAGE_DRIVER=mongo`
    - `MONGO_URI=<same Atlas connection string>`
    - `JWT_SECRET=<EXACT SAME secret as Netlify>`
-   - `ALLOWED_ORIGINS=https://YOUR-VERCEL-DOMAIN.vercel.app`
+   - `ALLOWED_ORIGINS=https://decentralised-community.vercel.app,https://decentralised-community.netlify.app`
 4. Deploy and confirm `/health` returns `{"status":"ok","service":"community-realtime"}`.
-5. Copy the Render service URL into `frontend/config.js` as `REALTIME_URL`, then redeploy Vercel.
+5. Confirm the Render service URL matches `REALTIME_URL` in `frontend/config.js`, then redeploy Vercel if you changed it.
 
 Render free services may sleep when idle and have ephemeral local disks. MongoDB Atlas is the persistent database. For reliable always-on real-time chat, use a paid always-on Render instance or another persistent WebSocket host.
 
@@ -102,7 +99,7 @@ Render free services may sleep when idle and have ephemeral local disks. MongoDB
 
 ## Production-readiness checklist (must be completed before real society data)
 
-- Run `npm install` and `npm test` after installing dependencies; this source archive was syntax-checked, but a full dependency install and end-to-end cloud deployment were not possible in this environment.
+- Run `npm install` (this generates a fresh package-lock.json for the added Firebase Admin dependency) and `npm test` after installing dependencies; this source archive was syntax-checked, but a full dependency install and end-to-end cloud deployment were not possible in this environment.
 - Configure production domain allowlists, Firebase authorized domains, Atlas network access and backups.
 - Rotate secrets after accidental exposure; never commit service-account keys or `.env` files.
 - Add a formal data-retention policy, privacy policy, terms, consent, member deletion/export process and abuse reporting.

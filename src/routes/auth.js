@@ -117,9 +117,9 @@ router.post('/login', loginLimiter, async (req, res) => {
 
   try {
     const user = await storage.users.findByUsername(username.toLowerCase());
-    const hash = user ? user.password_hash : await getDummyHash();
+    const hash = user && user.password_hash ? user.password_hash : await getDummyHash();
     const passwordMatch = await bcrypt.compare(password, hash);
-    if (!user || !passwordMatch) return res.status(401).json({ error: 'Invalid username or password' });
+    if (!user || !user.password_hash || !passwordMatch) return res.status(401).json({ error: 'Invalid username or password' });
 
     const token = signToken(user);
     res.json({

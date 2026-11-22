@@ -64,20 +64,53 @@
   }
 
   async function api(path, options) {
-    // FIXED: Use the new BACKEND_URL, fallback to COMMUNITY_CONFIG if it exists
     const base = (window.BACKEND_URL || (window.COMMUNITY_CONFIG && window.COMMUNITY_CONFIG.API_BASE_URL) || '').replace(/\/$/, '');
-    
-    const res = await fetch(`${base}${path}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(state.token ? { Authorization: `Bearer ${state.token}` } : {})
+    const isGet = !options || !options.method || String(options.method).toUpperCase() === 'GET';
+
+    // Serverless backends have cold starts (and a MongoDB connect on top), so allow
+    // a generous timeout and retry once on a genuine network failure.
+    async function attempt() {
+      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const timer = controller ? setTimeout(() => controller.abort(), 30000) : null;
+      try {
+        return await fetch(`${base}${path}`, {
+          mode: 'cors',
+          ...options,
+          signal: controller ? controller.signal : undefined,
+          headers: {
+            'Content-Type': 'application/json',
+            ...(state.token ? { Authorization: `Bearer ${state.token}` } : {})
+          }
+        });
+      } finally {
+        if (timer) clearTimeout(timer);
       }
-    });
+    }
+
+    let res;
+    try {
+      try {
+        res = await attempt();
+      } catch (first) {
+        if (!isGet && !(options && options.retryable)) {
+          // Only auth calls are safe to repeat; they are idempotent from the user's view.
+          if (!/^\/api\/auth\//.test(path)) throw first;
+        }
+        await new Promise((r) => setTimeout(r, 1500));
+        res = await attempt();
+      }
+    } catch (cause) {
+      const err = new Error(`Cannot reach the community backend (${base || 'no API URL configured'}). Check the Netlify API URL, deployment status, and CORS settings.`);
+      err.cause = cause;
+      throw err;
+    }
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const err = new Error(body.error || `Request failed (${res.status})`);
+      let message = body.error || `Request failed (${res.status})`;
+      if (body.hint) message += ` ${body.hint}`;
+      const err = new Error(message);
       err.status = res.status;
+      err.reason = body.reason;
       throw err;
     }
     return body;
